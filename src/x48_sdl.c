@@ -128,6 +128,15 @@ disp_t		disp;
 keypad_t  keypad;
 color_t  *colors;
 
+#ifdef PLATFORMWEBOS
+unsigned sdl_compact=1;
+#else
+unsigned sdl_compact=0;
+#endif
+
+// This will take the value of the defines, but can be run-time modified
+unsigned KEYBOARD_HEIGHT,KEYBOARD_WIDTH,TOP_SKIP,SIDE_SKIP,BOTTOM_SKIP,DISP_KBD_SKIP,DISPLAY_WIDTH,DISPLAY_HEIGHT,DISPLAY_OFFSET_X,DISPLAY_OFFSET_Y,DISP_FRAME,KEYBOARD_OFFSET_X,KEYBOARD_OFFSET_Y,KBD_UPLINE;
+
 
 
 
@@ -205,7 +214,8 @@ unsigned int ARGBColors[BLACK];
 
 
 
-button_t *buttons;
+button_t *buttons=0;
+
 
 button_t buttons_sx[] = {
   { "A", 0, 0, 0x14,  0, 0, 36, 23, WHITE,
@@ -618,40 +628,99 @@ void SDLCreateHP()
 	unsigned int	width, height;
 	
 	
+	// SDL port: we allocate memory for the buttons because we need to modify their coordinates, and we don't want to change the original buttons_gx or buttons_sx
+	if(buttons)
+	{
+		free(buttons);
+		buttons=0;
+	}
+	buttons = (button_t*)malloc(sizeof(buttons_gx));
+	
 	if (opt_gx)
 	{
-		buttons = buttons_gx;
+		//buttons = buttons_gx;
+		memcpy(buttons,buttons_gx,sizeof(buttons_gx));
 		colors = colors_gx;
 	}
 	else
 	{
-		buttons = buttons_sx;
+		//buttons = buttons_sx;
+		memcpy(buttons,buttons_gx,sizeof(buttons_sx));
 		colors = colors_sx;
 	}
 	
-	width = KEYBOARD_WIDTH + 2 * SIDE_SKIP;
-	height = DISPLAY_OFFSET_Y + DISPLAY_HEIGHT + DISP_KBD_SKIP + KEYBOARD_HEIGHT + BOTTOM_SKIP;
 	
-	disp.mapped=1;
-	disp.w = DISPLAY_WIDTH;
-	disp.h = DISPLAY_HEIGHT;
 	
-	keypad.width = width;
-	keypad.height = height;
 	
 	
 	int cut;
-	cut = buttons[BUTTON_MTH].y + KEYBOARD_OFFSET_Y - 19;
+	
 	
 		
 	///////////////////////////////////////////////
 	// SDL PORT
 	///////////////////////////////////////////////	
 	SDLCreateColors();
-	SDLDrawBackground(width, cut, width, height);
-	SDLDrawMore(width, height, cut,KEYBOARD_OFFSET_Y, KEYBOARD_OFFSET_X,keypad.width,keypad.height);	
-	SDLDrawBezel(width, height, KEYBOARD_OFFSET_Y, KEYBOARD_OFFSET_X);
-	SDLDrawKeypad();
+	if(sdl_compact==0)
+	{
+		width = KEYBOARD_WIDTH + 2 * SIDE_SKIP;
+		height = DISPLAY_OFFSET_Y + DISPLAY_HEIGHT + DISP_KBD_SKIP + KEYBOARD_HEIGHT + BOTTOM_SKIP;
+		
+		disp.mapped=1;
+		disp.w = DISPLAY_WIDTH;
+		disp.h = DISPLAY_HEIGHT;
+		
+		keypad.width = width;
+		keypad.height = height;
+		
+		printf("Screen size: %d %d\n",width,height);
+		
+		cut = buttons[BUTTON_MTH].y + KEYBOARD_OFFSET_Y - 19;
+		SDLDrawBackground(width, cut, width, height);
+		SDLDrawMore(width, height, cut,KEYBOARD_OFFSET_Y, KEYBOARD_OFFSET_X,keypad.width,keypad.height);	
+		SDLDrawLogo(width, height, cut,KEYBOARD_OFFSET_Y, KEYBOARD_OFFSET_X,keypad.width,keypad.height);	
+		SDLDrawBezel(width, height, KEYBOARD_OFFSET_Y, KEYBOARD_OFFSET_X);
+		SDLDrawKeypad();
+	}
+	else
+	{
+		// Tweak parameters to make the stuff use less screenspace
+		
+		TOP_SKIP=3;
+		SIDE_SKIP-=9;
+		//width = KEYBOARD_WIDTH + 2 * SIDE_SKIP;
+		
+		DISP_KBD_SKIP=11;
+		KBD_UPLINE=10;
+		
+		DISPLAY_OFFSET_X=_DISPLAY_OFFSET_X;						// Macro expansion :(
+		DISPLAY_OFFSET_Y=_DISPLAY_OFFSET_Y;						// Macro expansion :(
+		KEYBOARD_OFFSET_X=_KEYBOARD_OFFSET_X;					// Macro expansion :(
+		KEYBOARD_OFFSET_Y=_KEYBOARD_OFFSET_Y;					// Macro expansion :(
+		
+		
+			
+		width = KEYBOARD_WIDTH + 2 * SIDE_SKIP;
+		height = DISPLAY_OFFSET_Y + DISPLAY_HEIGHT + DISP_KBD_SKIP + KEYBOARD_HEIGHT + BOTTOM_SKIP;
+		
+		disp.mapped=1;
+		disp.w = DISPLAY_WIDTH;
+		disp.h = DISPLAY_HEIGHT;
+		
+		keypad.width = width;
+		keypad.height = height;
+		
+		printf("Screen size: %d %d\n",width,height);
+		
+		// Need to resize the screen
+		sdlscreen = SDL_SetVideoMode(width, height, 32, SDL_SWSURFACE);
+				
+		cut = buttons[BUTTON_MTH].y + KEYBOARD_OFFSET_Y - 19;
+		SDLDrawBackground(width, cut, width, height);
+		SDLDrawMore(width, height, cut,KEYBOARD_OFFSET_Y, KEYBOARD_OFFSET_X,keypad.width,keypad.height);	
+		//SDLDrawBezel(width, height, KEYBOARD_OFFSET_Y, KEYBOARD_OFFSET_X);
+		SDLDrawKeypad();
+	}
 	
 	
 	
@@ -1000,7 +1069,8 @@ int SDLGetEvent()
 				// React only to left mouse button
 				if(event.type==SDL_MOUSEBUTTONDOWN && event.button.button==SDL_BUTTON_LEFT)
 				{
-					if(event.button.y<DISPLAY_OFFSET_Y)
+					
+					if(event.button.y<DISPLAY_OFFSET_Y || event.button.y<48)			// If we resized the screen, then there's no space above offset_y...clicking on the screen has to do something
 						SDLShowInformation();
 					//printf("l button up/down at %d %d. hpkey: %d lastkey: %d long: %d\n",event.button.x,event.button.y,hpkey,lasthpkey,lastislongpress);
 				}	
@@ -1189,17 +1259,17 @@ void SDLDrawMore(unsigned int w, unsigned int h, unsigned int cut,unsigned int o
 	
 	
 	// right lines 
-	lineColor(sdlscreen,keypad_width - 3,cut - 1,keypad_width - 3, offset_y - 24,SDLBGRA2ARGB(ARGBColors[DISP_PAD_TOP]));
-	lineColor(sdlscreen,keypad_width - 4,cut - 1,keypad_width - 4, offset_y - 23,SDLBGRA2ARGB(ARGBColors[DISP_PAD_TOP]));
+	lineColor(sdlscreen,keypad_width - 3,cut - 1,keypad_width - 3, offset_y - (KBD_UPLINE-1),SDLBGRA2ARGB(ARGBColors[DISP_PAD_TOP]));
+	lineColor(sdlscreen,keypad_width - 4,cut - 1,keypad_width - 4, offset_y - (KBD_UPLINE-2),SDLBGRA2ARGB(ARGBColors[DISP_PAD_TOP]));
 	
 	
 	// top lines 
-	lineColor(sdlscreen,2, offset_y - 25,keypad_width - 4, offset_y - 25,SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
-	lineColor(sdlscreen,3, offset_y - 24,keypad_width - 5, offset_y - 24,SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
+	lineColor(sdlscreen,2, offset_y - (KBD_UPLINE-0),keypad_width - 4, offset_y - (KBD_UPLINE-0),SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
+	lineColor(sdlscreen,3, offset_y - (KBD_UPLINE-1),keypad_width - 5, offset_y - (KBD_UPLINE-1),SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
 	
 	// left lines 
-	lineColor(sdlscreen,2, cut - 1, 2, offset_y - 24,SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
-	lineColor(sdlscreen,3, cut - 1, 3, offset_y - 23,SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
+	lineColor(sdlscreen,2, cut - 1, 2, offset_y - (KBD_UPLINE-1),SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
+	lineColor(sdlscreen,3, cut - 1, 3, offset_y - (KBD_UPLINE-2),SDLBGRA2ARGB(ARGBColors[DISP_PAD_BOT]));
 	
 	// left lines 
 	lineColor(sdlscreen,2, keypad_height - 4, 2, cut,SDLBGRA2ARGB(ARGBColors[PAD_BOT]));
@@ -1241,6 +1311,14 @@ void SDLDrawMore(unsigned int w, unsigned int h, unsigned int cut,unsigned int o
 	lineColor(sdlscreen,6,keypad_height - 8, 6,keypad_height - 14,SDLBGRA2ARGB(ARGBColors[PAD_BOT]));
 	lineColor(sdlscreen,7,keypad_height - 9, 7,keypad_height - 11,SDLBGRA2ARGB(ARGBColors[PAD_BOT]));
 	
+}
+void SDLDrawLogo(unsigned int w, unsigned int h, unsigned int cut,unsigned int offset_y, unsigned int offset_x,int keypad_width,int keypad_height)
+{
+	int x, y;
+	SDL_Surface *surf;
+	
+	int display_height = DISPLAY_HEIGHT;
+	int display_width  = DISPLAY_WIDTH;
 	
 	// insert the HP Logo
 	surf = SDLCreateSurfFromData(hp_width,hp_height,hp_bits,ARGBColors[LOGO],ARGBColors[LOGO_BACK]);
@@ -1417,7 +1495,7 @@ void SDLCreateKeys(void)
 		{
 			buttons[i].surfacedown = SDL_CreateRGBSurface(SDL_SWSURFACE, buttons[i].w, buttons[i].h, 32, 0x00ff0000,0x0000ff00,0x000000ff,0xff000000);
 		}
-
+/*
 		if (i < BUTTON_MTH)
 			pixel = ARGBColors[DISP_PAD];
 		else
@@ -1427,7 +1505,10 @@ void SDLCreateKeys(void)
 			else
 				pixel = ARGBColors[PAD];
 		}
-
+*/
+		// Use alpha channel
+		pixel = 0x00000000;
+		//pixel = 0xffff0000;
 
 		
      	// Fill the button and outline 
@@ -2110,9 +2191,21 @@ void SDLInit()
 	
 	
 	
-	// Initialize display 
-	//unsigned width = KEYBOARD_WIDTH + 2 * SIDE_SKIP;
-	//unsigned height = DISPLAY_OFFSET_Y + DISPLAY_HEIGHT + DISP_KBD_SKIP + KEYBOARD_HEIGHT + BOTTOM_SKIP;
+	// Initialize the geometric values
+	KEYBOARD_HEIGHT=_KEYBOARD_HEIGHT;
+	KEYBOARD_WIDTH=_KEYBOARD_WIDTH;
+	TOP_SKIP=_TOP_SKIP;
+	SIDE_SKIP=_SIDE_SKIP;
+	BOTTOM_SKIP=_BOTTOM_SKIP;
+	DISP_KBD_SKIP=_DISP_KBD_SKIP;
+	DISPLAY_WIDTH=_DISPLAY_WIDTH;
+	DISPLAY_HEIGHT=_DISPLAY_HEIGHT;
+	DISPLAY_OFFSET_X=_DISPLAY_OFFSET_X;
+	DISPLAY_OFFSET_Y=_DISPLAY_OFFSET_Y;
+	DISP_FRAME=_DISP_FRAME;
+	KEYBOARD_OFFSET_X=_KEYBOARD_OFFSET_X;
+	KEYBOARD_OFFSET_Y=_KEYBOARD_OFFSET_Y;
+	KBD_UPLINE=_KBD_UPLINE;
 
 	
 	unsigned width = (buttons_gx[LAST_BUTTON].x + buttons_gx[LAST_BUTTON].w) + 2 * SIDE_SKIP;
@@ -2725,9 +2818,10 @@ void SDLShowInformation()
 	const char *info_text[]={
 			//"12345678901234567890123456789012345",
 			"",
-			"x48-sdl version 0.8.0",
+			"x48-sdl version 0.9.0",
 			"2011-2012 by Daniel Roggen",
 			"droggen@gmail.com",
+			"http://code.google.com/p/x48-sdl",
 			"",
 			"Based on x48 version 0.6.4",
 			"",
@@ -2746,7 +2840,11 @@ void SDLShowInformation()
 			"  port1: card 1 memory",
 			"  port2: card 2 memory",
 			"",
+#ifdef PLATFORMWEBOS
+			"These files must be in /media/internal/hp48",
+#else
 			"These files must be in ~/.hp48",
+#endif
 			"",
 			0
 		};

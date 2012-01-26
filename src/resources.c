@@ -110,8 +110,12 @@ get_resources()
 	//							to load the ROM romFileName. This is just for bootstrapping: afterwards then the emulator will save the state to homeDirectory
 	
 	// Have homeDirectory in the user's home
-	//strcpy(homeDirectory,".hp48");				// live files are stored in ~/.hp48
+#ifdef PLATFORMWEBOS
 	strcpy(homeDirectory,"/media/internal/hp48");
+#else
+	strcpy(homeDirectory,".hp48");				// live files are stored in ~/.hp48
+#endif
+	
 	
 
 	// As a fallback, assume that a ROM will be available at the same location as the executable
