@@ -44,7 +44,11 @@ This is what was done:
 
 HISTORY 
 
+v0.9.0 26.01.2012: 
+	- Add sdl_compact to minimize the screen space needed for small devices (currently for WebOS)
+	
 v0.8.0 09.01.2012: First release
+
 
 
 

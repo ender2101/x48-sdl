@@ -164,23 +164,25 @@
 #define LAST_BUTTON	48
 
 // Screen size
-#define KEYBOARD_HEIGHT	(buttons[LAST_BUTTON].y + buttons[LAST_BUTTON].h)
-#define KEYBOARD_WIDTH  (buttons[LAST_BUTTON].x + buttons[LAST_BUTTON].w)
 
-#define TOP_SKIP		65
-#define SIDE_SKIP		20
-#define BOTTOM_SKIP		25
-#define DISP_KBD_SKIP		65
+#define _KEYBOARD_HEIGHT	(buttons_gx[LAST_BUTTON].y + buttons_gx[LAST_BUTTON].h)
+#define _KEYBOARD_WIDTH  (buttons_gx[LAST_BUTTON].x + buttons_gx[LAST_BUTTON].w)
 
-#define DISPLAY_WIDTH		(264 + 8)
-#define DISPLAY_HEIGHT		(128 + 16 + 8)
-#define DISPLAY_OFFSET_X	(SIDE_SKIP+(286-DISPLAY_WIDTH)/2)
-#define DISPLAY_OFFSET_Y	TOP_SKIP
+#define _TOP_SKIP		65
+#define _SIDE_SKIP		20
+#define _BOTTOM_SKIP		25
+#define _DISP_KBD_SKIP		65
+#define _KBD_UPLINE			25
 
-#define DISP_FRAME		8
+#define _DISPLAY_WIDTH		(264 + 8)
+#define _DISPLAY_HEIGHT		(128 + 16 + 8)
+#define _DISPLAY_OFFSET_X	(SIDE_SKIP+(286-DISPLAY_WIDTH)/2)
+#define _DISPLAY_OFFSET_Y	TOP_SKIP
 
-#define KEYBOARD_OFFSET_X	SIDE_SKIP
-#define KEYBOARD_OFFSET_Y	(TOP_SKIP + DISPLAY_HEIGHT + DISP_KBD_SKIP)
+#define _DISP_FRAME		8
+
+#define _KEYBOARD_OFFSET_X	SIDE_SKIP
+#define _KEYBOARD_OFFSET_Y	(TOP_SKIP + DISPLAY_HEIGHT + DISP_KBD_SKIP)
 
 
 
@@ -306,6 +308,7 @@ void SDLDrawKeyLetter();
 unsigned SDLBGRA2ARGB(unsigned color);
 void SDLDrawBezel(unsigned int width, unsigned int height, unsigned int offset_y, unsigned int offset_x);
 void SDLDrawMore(unsigned int w, unsigned int h, unsigned int cut,unsigned int offset_y, unsigned int offset_x,int keypad_width,int keypad_height);
+void SDLDrawLogo(unsigned int w, unsigned int h, unsigned int cut,unsigned int offset_y, unsigned int offset_x,int keypad_width,int keypad_height);
 void SDLDrawBackground(int width, int height, int w_top, int h_top);
 void SDLUIShowKey(int hpkey);
 void SDLUIHideKey();
