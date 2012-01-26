@@ -1,0 +1,9 @@
+{
+	"title": "HP48 Emulator",
+	"type": "pdk",
+	"main": "x48",
+	"id": "net.danielroggen.x48",
+	"version": "0.8.0",
+	"vendor": "danielroggen",
+	"icon":     "icon.png" 
+}
