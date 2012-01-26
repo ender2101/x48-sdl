@@ -1,0 +1,16 @@
+HP 48GX emulator
+
+Based on x48 revision 0.6.4
+
+It might happen that the HP48 doesn't turn on: in this case press repeatedly the ON key, or close and relaunch the program. This is an issue of x48.
+
+Currently there is no way to load a program from the emulator. However the data of the emulator is stored in a directory 'hp48' on the USB drive. You can also place there your own 'ram', 'port1' or 'port2' files to load some programs. For instance set-up your emulator on your PC then transfer the 'port1'. If needed you can also erase these files to clear the HP48 memory. 
+
+Currently this is a straight SDL port of x48 which results in Due to the screen size this program is currently suited only for Pre3 and Touchpad. A future version will have an optimized interface for small screens.
+
+The state of the emulator is saved when closing the app.
+
+Suitable for: Pre-, Pre+, Pre2, Pre3, Pixi, Veer, Touchpad
+
+v0.8.0 09.01.2012: First release
+
